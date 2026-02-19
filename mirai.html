@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家族の未来デザイン計算機</title>
+    <style>
+        :root { --main-blue: #6baed6; --soft-green: #a1d99b; --warn-orange: #fdae6b; --mom-pink: #f781bf; --bg-gray: #f8f9fa; }
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Sans", sans-serif; background-color: var(--bg-gray); color: #444; margin: 0; padding: 10px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
+        .header { background: linear-gradient(135deg, var(--main-blue), var(--soft-green)); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 1.4rem; }
+        .content { padding: 25px; }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; color: #555; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
+        
+        .calc-btn { width: 100%; padding: 20px; background: var(--main-blue); color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .calc-btn:hover { background: #4a90e2; transform: translateY(-2px); }
+
+        .result-area { display: none; margin-top: 30px; animation: slideUp 0.5s ease-out; }
+        
+        /* 比較テーブル */
+        .comp-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+        .comp-table th, .comp-table td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        .comp-table th { background: #f9f9f9; }
+        .total-row { background: var(--light-blue); font-weight: bold; background: #eef7ff; }
+
+        .diff-banner { background: #fff4e5; border: 1px solid #fbd38d; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 25px; font-weight: bold; color: #c05621; font-size: 1.1rem; }
+
+        .card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .card-blue { border-left: 6px solid var(--main-blue); background: #f0f7ff; }
+        .card-pink { border-left: 6px solid var(--mom-pink); background: #fff5f8; }
+        
+        /* 下線部の文字サイズを大きく修正 */
+        .value { font-size: 1.5rem; font-weight: bold; color: #2c3e50; border-bottom: 3px solid var(--warn-orange); padding: 0 5px; }
+        
+        .small-text { font-size: 0.85rem; color: #666; line-height: 1.6; margin-top: 10px; }
+        .edu-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
+        .edu-table td, .edu-table th { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>家族の未来デザイン計算機</h1>
+        <p>〜 ひとりより、ふたり。もっと自由で安心な暮らしへ 〜</p>
+    </div>
+
+    <div class="content">
+        <div class="input-group">
+            <label>🏠 パパの今の月収（額面/万円）</label>
+            <input type="number" id="dadInc" value="30">
+        </div>
+        
+        <div class="input-row">
+            <div>
+                <label>👩 ママの今の月収</label>
+                <input type="number" id="momNow" value="5">
+            </div>
+            <div>
+                <label>✨ ママの目標月収</label>
+                <input type="number" id="momTarget" value="16">
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div>
+                <label>👦 お子様の人数</label>
+                <input type="number" id="kids" value="1">
+            </div>
+            <div>
+                <label>🏫 施設の選択</label>
+                <select id="facility">
+                    <option value="hoiku">保育園</option>
+                    <option value="yochien">幼稚園</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="calc-btn" onclick="runCalc()">ふたりの可能性を計算する</button>
+
+        <div id="result" class="result-area">
+            
+            <div class="card">
+                <strong>📊 世帯年収の比較（年間）</strong>
+                <table class="comp-table">
+                    <tr><th>項目</th><th>扶養内（現状）</th><th>扶養外（未来）</th></tr>
+                    <tr><td>パパ手取り</td><td>約 <span id="tabDadBase"></span> 万</td><td>約 <span id="tabDadOut"></span> 万</td></tr>
+                    <tr><td>ママ手取り</td><td>約 <span id="tabMomBase"></span> 万</td><td>約 <span id="tabMomOut"></span> 万</td></tr>
+                    <tr class="total-row"><td>世帯合計</td><td>約 <span id="tabTotalBase"></span> 万</td><td>約 <span id="tabTotalOut"></span> 万</td></tr>
+                </table>
+                <div class="diff-banner">年間で 約 <span id="resDiff"></span> 万円 のゆとりが生まれます！</div>
+            </div>
+
+            <div class="card card-blue">
+                <strong>👨 パパへ：収入は「分散」が一番の安心</strong>
+                <p>ママが社会保険に入って働くと、今より家計の「ゆとり」は年間で約 <span class="value" id="resYearlyPlus"></span> 万円増えます。</p>
+                <p class="small-text">
+                    これは、お子様の大学費用（私立文系 約400万円）を約 <span id="resYearsToSave" style="font-weight:bold;"></span> 年で準備できる計算です。
+                    パパ一人の肩の荷を、ふたりで分かち合いませんか？
+                </p>
+                <p class="small-text" style="color:#2c3e50; font-weight:bold; border-top:1px solid #d0e0f0; padding-top:10px; margin-top:15px;">
+                    ※今の時代、部下や後輩は「共働き」が当たり前。家事育児を分担する経験は、パパの仕事（マネジメント）にも必ず活きます！
+                </p>
+            </div>
+
+            <div class="card card-pink">
+                <strong>👩 ママへ：働くことは、自分への保険</strong>
+                <p>もしもの時、今の月収があれば、家族の固定費の約 <span class="value" id="resCover"></span> ％を支えられます。</p>
+                <p class="small-text">
+                    働いていれば、将来の年金も増え、自分自身の「自由なお金」も確保できます。
+                    失業保険や育休手当など、国の制度は頑張るママの味方です。
+                </p>
+            </div>
+
+            <div class="card">
+                <strong>📊 必要になる教育費の目安（1人あたり）</strong>
+                <table class="edu-table">
+                    <tr><th>時期</th><th>公立</th><th>私立</th></tr>
+                    <tr><td>小学校(6年)</td><td>約190万</td><td>約960万</td></tr>
+                    <tr><td>中学校(3年)</td><td>約150万</td><td>約420万</td></tr>
+                    <tr><td>高校(3年)</td><td>約150万</td><td>約310万</td></tr>
+                    <tr><td>大学(4年)</td><td>約250万</td><td>約400万〜</td></tr>
+                </table>
+                <p class="small-text" id="facilityMemo"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function runCalc() {
+    const dadInc = parseFloat(document.getElementById('dadInc').value) || 0;
+    const momNow = parseFloat(document.getElementById('momNow').value) || 0;
+    const momTarget = parseFloat(document.getElementById('momTarget').value) || 0;
+
+    // 詳細計算（現状）
+    const dBase = Math.round(dadInc * 12 * 0.82);
+    const mBase = Math.round(momNow * 12 * 0.98);
+    const tBase = dBase + mBase;
+
+    // 詳細計算（未来：パパも配偶者控除が外れる分を考慮）
+    const dOut = Math.round(dadInc * 12 * 0.80);
+    const mOut = Math.round(momTarget * 12 * 0.80);
+    const tOut = dOut + mOut;
+    
+    const diff = tOut - tBase;
+    const yearsToSave = diff > 0 ? (400 / diff).toFixed(1) : "---";
+    const coverRate = Math.min(Math.round((momTarget * 0.8 / (dadInc * 0.6 || 1)) * 100), 100);
+
+    // テーブル反映
+    document.getElementById('tabDadBase').innerText = dBase;
+    document.getElementById('tabDadOut').innerText = dOut;
+    document.getElementById('tabMomBase').innerText = mBase;
+    document.getElementById('tabMomOut').innerText = mOut;
+    document.getElementById('tabTotalBase').innerText = tBase;
+    document.getElementById('tabTotalOut').innerText = tOut;
+
+    // 各所反映
+    document.getElementById('resDiff').innerText = diff > 0 ? diff : 0;
+    document.getElementById('resYearlyPlus').innerText = diff > 0 ? diff : 0;
+    document.getElementById('resYearsToSave').innerText = yearsToSave;
+    document.getElementById('resCover').innerText = coverRate;
+    
+    document.getElementById('facilityMemo').innerText = document.getElementById('facility').value === 'hoiku' ? 
+        "【メモ】保育園は副食費が保育料に含まれます。" : 
+        "【メモ】幼稚園は給食費・バス代などが別途発生します。";
+
+    document.getElementById('result').style.display = 'block';
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
